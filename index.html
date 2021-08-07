@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">{message}</div>
+    <input id='input' type="text" oninput="myFunction()" >
+</body> 
+
+<script>
+/**
+ * 1.初始模板渲染
+ * 2.劫持数据
+ * 订阅-发布，观察者模式
+ * 1.模板为订阅者（观察者）=
+ * 2.数据为发布者
+*/
+
+let target =null
+class Dep{
+    constructor() {
+        this.subscribers = []
+    }
+
+    depend(){
+        if(target){
+            this.subscribers.push(target)
+        }
+    }
+
+    notify(v){
+        this.subscribers.forEach(sub=>sub(v))
+    }
+}
+function observe(vm){
+    let obj = vm.$options.data
+    vm._data = vm.$options.data
+    let dep = new Dep()
+    for (const key in obj) {
+        if (Object.hasOwnProperty.call(obj, key)) {
+            let value  = obj[key]
+            Object.defineProperty(obj,key,{
+                get() { 
+                    dep.depend()
+                    return value; 
+                },
+                set(newValue) { 
+                    value = newValue
+                    dep.notify(vm)
+                }
+            })
+        }
+    }
+}
+
+function reRender(v){
+    var dom = document.getElementById(v.$options.el)
+    let holdPlace = 'message'
+    if(dom.innerHTML.indexOf('{')!=-1){
+        dom.innerHTML =  v._data[holdPlace]
+        return
+    }
+    dom.innerHTML =  v._data[holdPlace]
+}
+function initRender(vm){
+    let v = vm
+    target = reRender
+    reRender(vm)
+    target = null
+}
+
+function MVUE(options){
+    this.init(options)
+}
+MVUE.prototype.init = function (options){
+    const vm = this
+    vm.$options = options
+    observe(vm)
+    initRender(vm)
+}
+
+var app = new MVUE({
+    el:'app',
+    data:{
+        message:'hello Kitty'
+    }
+})
+
+function myFunction(){
+    app._data.message = document.getElementById('input').value
+}
+
+</script>
+</html>
